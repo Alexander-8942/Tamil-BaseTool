@@ -1,6 +1,6 @@
 from tamil_letter_split import tamil_letter_split
 
-def tamil_syllable_split(word):
+def tamil_syllable_split_01(word):
     special_conjunctions = ["ஸ்ரீ", "க்ஷெள", "க்ஷ",	"க்ஷா",	"க்ஷி",	"க்ஷீ",	"க்ஷு",	"க்ஷூ",	"க்ஷெ",	"க்ஷே",	"க்ஷை",	"க்ஷொ",	"க்ஷோ"] 
     
     graphemes = tamil_letter_split(word)
@@ -53,6 +53,55 @@ def tamil_syllable_split(word):
 
     # collect syllables
     for i, (g, l) in enumerate(labels):
+        if not used[i]:
+            syllables.append(g)
+
+    return syllables
+
+def tamil_syllable_split(word):
+    special_conjunctions = [
+        "ஸ்ரீ", "க்ஷெள", "க்ஷ", "க்ஷா", "க்ஷி", "க்ஷீ", "க்ஷு",
+        "க்ஷூ", "க்ஷெ", "க்ஷே", "க்ஷை", "க்ஷொ", "க்ஷோ"
+    ]
+
+    graphemes = tamil_letter_split(word)
+    labels = []
+
+    for g in graphemes:
+        if g in special_conjunctions:
+            labels.append((g, 'O'))
+        elif '்' in g:
+            labels.append((g, 'C'))
+        else:
+            labels.append((g, 'O'))
+
+    print("Labeled Graphemes:", labels)  # Debug
+
+    syllables = []
+    used = [False] * len(labels)
+
+    # Handle the very first grapheme separately (attach to next vowel if it's a consonant)
+    i = 0
+    if labels and labels[0][1] == 'C':
+        # Look for the next vowel
+        for j in range(1, len(labels)):
+            if labels[j][1] == 'O':
+                labels[j] = (labels[0][0] + labels[j][0], 'O')
+                used[0] = True
+                break
+
+    # From second grapheme onward: attach consonants to the previous vowel
+    for i in range(1, len(labels)):
+        if labels[i][1] == 'C' and not used[i]:
+            # Look left for nearest vowel
+            for j in range(i - 1, -1, -1):
+                if labels[j][1] == 'O' and not used[j]:
+                    labels[j] = (labels[j][0] + labels[i][0], 'O')
+                    used[i] = True
+                    break
+
+    # Collect final syllables
+    for i, (g, _) in enumerate(labels):
         if not used[i]:
             syllables.append(g)
 
